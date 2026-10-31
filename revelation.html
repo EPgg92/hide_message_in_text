@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Révélation</title>
+  <style>
+    :root {
+      --encre: #1c1915;
+      --encre-douce: #5e574e;
+      --fond: #ebe6dc;
+      --carte: #f7f4ee;
+      --filet: #d9d1c4;
+      --accent: #1e4a42;
+      --focus: #1e4a42;
+      --ombre: 0 1px 2px rgb(28 25 21 / 6%);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      color: var(--encre);
+      background: var(--fond);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.75rem, 1.6vw, 1.1rem);
+      width: min(100%, 1640px);
+      height: 100dvh;
+      min-height: 0;
+      margin: 0 auto;
+      padding: clamp(0.75rem, 2.4vw, 1.5rem);
+    }
+
+    .saisie,
+    .sortie {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-width: 0;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .zone {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-width: 0;
+      min-height: 0;
+      flex: 1;
+    }
+
+    .entete {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+    }
+
+    label,
+    .entete span {
+      font-size: 0.95rem;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    .copier,
+    .lien {
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .copier {
+      flex: none;
+      margin: 0;
+      padding: 0.22rem 0.62rem;
+      border: 1px solid var(--filet);
+      border-radius: 0.5rem;
+      background: transparent;
+      color: var(--encre);
+      font-size: 0.8rem;
+    }
+
+    .copier:hover,
+    .lien:hover {
+      background: rgb(28 25 21 / 5%);
+    }
+
+    textarea {
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 0.85rem 0.95rem;
+      border: 1px solid var(--filet);
+      border-radius: 0.8rem;
+      background: var(--carte);
+      color: inherit;
+      box-shadow: var(--ombre);
+      font: inherit;
+      line-height: 1.5;
+      resize: none;
+    }
+
+    textarea::placeholder {
+      color: var(--encre-douce);
+    }
+
+    textarea:focus,
+    .copier:focus-visible,
+    .lien:focus-visible,
+    .oeil:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .actions {
+      display: flex;
+    }
+
+    .lien {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1 1 auto;
+      padding: 0.75rem 1.3rem;
+      border-radius: 0.8rem;
+      background: transparent;
+      color: var(--accent);
+      box-shadow: inset 0 0 0 1.5px var(--accent);
+      text-decoration: none;
+    }
+
+    .cadre {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border: 1px solid var(--filet);
+      border-radius: 0.8rem;
+      overflow: hidden;
+      background: var(--carte);
+      box-shadow: var(--ombre);
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: var(--carte);
+    }
+
+    .oeil {
+      position: absolute;
+      z-index: 1;
+      top: 0.65rem;
+      right: 0.65rem;
+      display: grid;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      border: 1px solid var(--filet);
+      border-radius: 999px;
+      background: rgb(247 244 238 / 94%);
+      cursor: pointer;
+    }
+
+    .oeil img {
+      display: block;
+      width: 1.35rem;
+      height: 1.35rem;
+    }
+
+    .oeil:hover,
+    .oeil:focus-visible {
+      background: #fff;
+      border-color: var(--accent);
+    }
+
+    @media (min-width: 860px) {
+      .page {
+        flex-direction: row;
+        align-items: stretch;
+      }
+
+      .saisie {
+        flex: 0.9;
+      }
+
+      .sortie {
+        flex: 1.15;
+      }
+
+      .lien {
+        flex: none;
+        align-self: flex-start;
+        min-width: 9.5rem;
+      }
+    }
+
+    @media (max-height: 560px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100dvh;
+      }
+
+      textarea,
+      .cadre {
+        min-height: 12rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="saisie">
+      <section class="zone">
+        <div class="entete">
+          <label for="chiffre">Texte chiffré</label>
+          <button type="button" class="copier" data-cible="chiffre">Copier</button>
+        </div>
+        <textarea
+          id="chiffre"
+          placeholder="Collez ici le texte chiffré, avec ses spans."
+        ></textarea>
+      </section>
+      <div class="actions">
+        <a class="lien" href="index.html">Cacher</a>
+      </div>
+    </div>
+
+    <div class="sortie">
+      <section class="zone">
+        <div class="entete">
+          <span id="titre-apercu">Aperçu</span>
+        </div>
+        <div class="cadre">
+          <button type="button" class="oeil" aria-label="Révéler les lettres cachées">
+            <img
+              src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/icons/eye.svg"
+              alt=""
+              width="22"
+              height="22"
+            >
+          </button>
+          <iframe
+            id="apercu"
+            sandbox="allow-same-origin"
+            title="Aperçu du texte chiffré"
+          ></iframe>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const champ = document.querySelector("#chiffre");
+    const iframe = document.querySelector("#apercu");
+    const oeil = document.querySelector(".oeil");
+
+    const squelette = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      padding: 1.15rem 3.4rem 1.5rem 1.25rem;
+      background: #f7f4ee;
+      color: #1c1915;
+      font: 1.05rem/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .vide { margin: 0; color: #5e574e; }
+    body.revele { color: rgb(28 25 21 / 18%); }
+    body.revele .hidden { color: #c4232b; }
+    body.revele .vide { color: rgb(28 25 21 / 18%); }
+  </style>
+</head>
+<body></body>
+</html>`;
+
+    function corps() {
+      return iframe.contentDocument && iframe.contentDocument.body;
+    }
+
+    function afficher() {
+      const body = corps();
+      if (!body) return;
+      const revele = body.classList.contains("revele");
+      if (!champ.value) {
+        body.innerHTML = '<p class="vide">Collez un texte chiffré pour l’afficher.</p>';
+      } else {
+        body.innerHTML = champ.value;
+      }
+      body.classList.toggle("revele", revele);
+    }
+
+    function reveler(actif) {
+      const body = corps();
+      if (!body) return;
+      body.classList.toggle("revele", actif);
+    }
+
+    iframe.srcdoc = squelette;
+    iframe.addEventListener("load", afficher);
+    champ.addEventListener("input", afficher);
+    oeil.addEventListener("mouseenter", () => reveler(true));
+    oeil.addEventListener("mouseleave", () => reveler(false));
+    oeil.addEventListener("focus", () => reveler(true));
+    oeil.addEventListener("blur", () => reveler(false));
+
+    async function copierChamp(bouton) {
+      const zone = document.querySelector("#" + bouton.dataset.cible);
+      const ancien = bouton.textContent;
+      try {
+        await navigator.clipboard.writeText(zone.value);
+        bouton.textContent = "Copié";
+      } catch (erreur) {
+        bouton.textContent = "Impossible";
+      }
+      window.setTimeout(() => {
+        bouton.textContent = ancien;
+      }, 1400);
+    }
+
+    document.querySelector(".copier").addEventListener("click", (evenement) => {
+      copierChamp(evenement.currentTarget);
+    });
+  </script>
+</body>
+</html>
