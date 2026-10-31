@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cacher un message</title>
+  <style>
+    :root {
+      --encre: #1c1915;
+      --encre-douce: #5e574e;
+      --fond: #ebe6dc;
+      --carte: #f7f4ee;
+      --carte-sortie: #f3efe6;
+      --filet: #d9d1c4;
+      --accent: #1e4a42;
+      --accent-survol: #163830;
+      --focus: #1e4a42;
+      --ombre: 0 1px 2px rgb(28 25 21 / 6%);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      color: var(--encre);
+      background: var(--fond);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.75rem, 1.6vw, 1.1rem);
+      width: min(100%, 1640px);
+      height: 100dvh;
+      min-height: 0;
+      margin: 0 auto;
+      padding: clamp(0.75rem, 2.4vw, 1.5rem);
+    }
+
+    .saisie,
+    .sortie {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .saisie {
+      flex: 1.25;
+    }
+
+    .sortie {
+      flex: 1;
+    }
+
+    .zone {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .zone-texte {
+      flex: 1.65;
+    }
+
+    .zone-message,
+    .zone-chiffre {
+      flex: 1;
+    }
+
+    label {
+      font-size: 0.95rem;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    textarea {
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 0.85rem 0.95rem;
+      border: 1px solid var(--filet);
+      border-radius: 0.8rem;
+      background: var(--carte);
+      color: inherit;
+      box-shadow: var(--ombre);
+      font: inherit;
+      line-height: 1.5;
+      resize: none;
+    }
+
+    textarea::placeholder {
+      color: var(--encre-douce);
+    }
+
+    textarea:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+      border-color: transparent;
+    }
+
+    #chiffre {
+      background: var(--carte-sortie);
+    }
+
+    button {
+      align-self: stretch;
+      margin: 0;
+      padding: 0.75rem 1.3rem;
+      border: 0;
+      border-radius: 0.8rem;
+      background: var(--accent);
+      color: #f7f4ee;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--accent-survol);
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    @media (min-width: 860px) {
+      .page {
+        flex-direction: row;
+        align-items: stretch;
+      }
+
+      .saisie {
+        flex: 1.15;
+      }
+
+      .sortie {
+        flex: 1;
+      }
+
+      button {
+        align-self: flex-start;
+        min-width: 9.5rem;
+      }
+    }
+
+    @media (max-height: 560px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .page {
+        height: auto;
+        min-height: 100dvh;
+      }
+
+      textarea {
+        min-height: 8rem;
+        resize: vertical;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="saisie">
+      <section class="zone zone-texte">
+        <label for="texte">Texte</label>
+        <textarea
+          id="texte"
+          name="texte"
+          placeholder="Le long texte dans lequel le message sera caché."
+        ></textarea>
+      </section>
+
+      <section class="zone zone-message">
+        <label for="message">Message à cacher</label>
+        <textarea
+          id="message"
+          name="message"
+          placeholder="Le message à dissimuler dans le texte."
+        ></textarea>
+      </section>
+
+      <button type="button" id="executer">Exécuter</button>
+    </div>
+
+    <div class="sortie">
+      <section class="zone zone-chiffre">
+        <label for="chiffre">Texte chiffré</label>
+        <textarea
+          id="chiffre"
+          name="chiffre"
+          placeholder="Le texte chiffré s’affichera ici. La zone reste modifiable."
+        ></textarea>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    function executer() {
+      const texte = document.querySelector("#texte").value;
+      const message = document.querySelector("#message").value;
+      document.querySelector("#chiffre").value = cacher(texte, message);
+    }
+
+    function cacher(texte, message) {
+      const caracteres = Array.from(message).filter((caractere) => !/\s/u.test(caractere));
+      if (caracteres.length === 0) return texte;
+
+      const indices = placerDepuisLaFin(texte, caracteres);
+      if (!indices) {
+        return "Le message à cacher ne peut pas être caché dans ce texte.";
+      }
+      return insererSpans(texte, indices);
+    }
+
+    const GRAINE = 42;
+    const SAUT_MAX = 20;
+
+    function creerHasard(graine) {
+      let etat = graine >>> 0;
+      return function () {
+        etat = (etat + 0x6d2b79f5) >>> 0;
+        let t = Math.imul(etat ^ (etat >>> 15), 1 | etat);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // Placement de la fin vers le début. Chaque caractère vise le milieu du
+    // créneau qui lui reste (texte encore libre / caractères restants). Le
+    // jitter (graine 42, 0 à 20 lettres, d'un côté ou de l'autre) est essayé
+    // en premier, puis ramené vers ce créneau. Si le début du message ne tient
+    // plus devant ce choix, on prend le candidat suivant, plus près du créneau.
+    function placerDepuisLaFin(texte, caracteres) {
+      const source = Array.from(texte);
+      const minuscules = source.map((caractere) => caractere.toLowerCase());
+      const besoin = caracteres.map((caractere) => caractere.toLowerCase());
+      const longueur = source.length;
+      const nombre = besoin.length;
+      if (nombre === 0) return [];
+      if (nombre > longueur) return null;
+
+      const plusTot = new Array(nombre);
+      let curseur = 0;
+      for (let j = 0; j < nombre; j++) {
+        while (curseur < longueur && minuscules[curseur] !== besoin[j]) curseur++;
+        if (curseur >= longueur) return null;
+        plusTot[j] = curseur;
+        curseur++;
+      }
+
+      const hasard = creerHasard(GRAINE);
+      const choix = new Array(nombre);
+      let explorations = 0;
+
+      function candidats(j, limite) {
+        const min = plusTot[j];
+        const max = limite - 1;
+        if (min > max) return [];
+
+        const libre = max + 1;
+        const ideal = ((j + 0.5) / nombre) * longueur;
+        const etale = ((j + 0.5) / (j + 1)) * libre;
+        const ancre = Math.min(max, Math.max(min, Math.round((ideal < libre ? ideal : etale) - 0.5)));
+        const saut = Math.floor(hasard() * (SAUT_MAX + 1));
+        const sens = hasard() < 0.5 ? -1 : 1;
+        const vouloir = besoin[j];
+        const ordre = [];
+        const vu = new Set();
+
+        function proposer(pos) {
+          if (pos < min || pos > max || vu.has(pos)) return;
+          vu.add(pos);
+          if (minuscules[pos] === vouloir) ordre.push(pos);
+        }
+
+        for (let d = saut; d >= 0; d--) proposer(ancre + sens * d);
+        for (let d = 1; d <= saut; d++) proposer(ancre - sens * d);
+
+        const autres = [];
+        for (let pos = min; pos <= max; pos++) {
+          if (minuscules[pos] === vouloir && !vu.has(pos)) autres.push(pos);
+        }
+        autres.sort((a, b) => {
+          const ecart = Math.abs(a - ancre) - Math.abs(b - ancre);
+          if (ecart !== 0) return ecart;
+          return b - a;
+        });
+        for (const pos of autres) ordre.push(pos);
+        return ordre;
+      }
+
+      const pile = [{ j: nombre - 1, limite: longueur, liste: null, rang: 0 }];
+
+      while (pile.length > 0) {
+        const cadre = pile[pile.length - 1];
+        if (cadre.j < 0) return choix;
+        if (cadre.liste === null) {
+          if (++explorations > 20000) return null;
+          cadre.liste = candidats(cadre.j, cadre.limite);
+        }
+        if (cadre.rang >= cadre.liste.length) {
+          pile.pop();
+          continue;
+        }
+        choix[cadre.j] = cadre.liste[cadre.rang++];
+        pile.push({
+          j: cadre.j - 1,
+          limite: choix[cadre.j],
+          liste: null,
+          rang: 0,
+        });
+      }
+
+      return null;
+    }
+
+    function insererSpans(texte, indices) {
+      const source = Array.from(texte);
+      let resultat = "";
+      let i = 0;
+      let rang = 0;
+
+      while (i < source.length) {
+        if (rang >= indices.length || indices[rang] !== i) {
+          resultat += source[i];
+          i++;
+          continue;
+        }
+
+        const debut = i;
+        let longueur = 1;
+        while (
+          rang + longueur < indices.length &&
+          indices[rang + longueur] === debut + longueur
+        ) {
+          longueur++;
+        }
+
+        const morceau = source.slice(debut, debut + longueur).join("");
+        resultat += '<span class="hidden">' + echapperHtml(morceau) + "</span>";
+        rang += longueur;
+        i += longueur;
+      }
+
+      return resultat;
+    }
+
+    function echapperHtml(morceau) {
+      return morceau
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    document.querySelector("#executer").addEventListener("click", executer);
+  </script>
+</body>
+</html>
